@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
 <title>Walking Paradox Studio — Nepal Content Maker</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;600;700;900&family=Cinzel:wght@500;600&display=swap" rel="stylesheet"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" integrity="sha512-XMVd28F1oH/O71fzwBnV7HucLxVwtxf26XV8P4wPk26EDxuGZ91N8bsOttmnomcCD3CS5ZMRL50H0GgOHvegtg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -273,6 +273,33 @@ canvas{border-radius:8px;display:block;max-width:100%;box-shadow:0 16px 60px rgb
 .font-chip{padding:7px 3px;border-radius:6px;background:var(--card);border:1.5px solid var(--b2);color:var(--t2);font-size:11px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s}
 .font-chip.on{background:var(--gg);border-color:var(--gd);color:var(--gold)}
 .weight-pick{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+/* ── VIDEO SAVE OVERLAY ── */
+.video-overlay{
+  position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.96);
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  gap:16px;padding:20px;
+}
+.video-overlay.show{display:flex}
+.video-overlay video{
+  max-width:100%;max-height:60vh;border-radius:8px;
+  box-shadow:0 8px 40px rgba(0,0,0,.8);display:block;
+  background:#000;
+}
+.video-save-instructions{
+  background:rgba(232,201,106,.1);border:1px solid rgba(232,201,106,.25);
+  border-radius:12px;padding:14px 20px;text-align:center;
+  font-size:13px;line-height:1.9;color:#ede8de;max-width:380px;
+}
+.video-save-instructions strong{color:var(--gold)}
+.video-save-instructions .step{
+  display:flex;align-items:center;gap:10px;margin:4px 0;
+  font-size:12px;color:var(--t2);text-align:left;
+}
+.video-save-instructions .step .num{
+  width:22px;height:22px;border-radius:50%;background:var(--gold);
+  color:var(--inv);font-size:11px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
 /* ── SAVE OVERLAY (iOS) ── */
 .save-overlay{
   position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.94);
@@ -754,6 +781,18 @@ canvas{border-radius:8px;display:block;max-width:100%;box-shadow:0 16px 60px rgb
   <button class="abtn gold-btn" id="qGoM"   onclick="qExport()">⬇ Export</button>
 </div>
 
+<!-- Video Save Overlay (Chrome/Desktop) -->
+<div class="video-overlay" id="videoOverlay">
+  <video id="videoOverlayEl" controls playsinline></video>
+  <div class="video-save-instructions">
+    <strong>🎬 Your video is ready</strong><br>
+    <div class="step"><div class="num">1</div><span>Right-click (or long-press) the video above</span></div>
+    <div class="step"><div class="num">2</div><span>Select <strong style="color:var(--gold)">"Save video as..."</strong></span></div>
+    <div class="step"><div class="num">3</div><span>Save to your computer — then import into CapCut</span></div>
+    <div style="margin-top:8px;font-size:10px;color:var(--t3)">This method avoids Chrome's security warning on blob downloads</div>
+  </div>
+  <button class="save-overlay-close" onclick="closeVideoOverlay()">✕ Close</button>
+</div>
 <!-- iOS Save Overlay -->
 <div class="save-overlay" id="saveOverlay">
   <img id="saveOverlayImg" src="" alt="Your post"/>
@@ -772,6 +811,25 @@ canvas{border-radius:8px;display:block;max-width:100%;box-shadow:0 16px 60px rgb
 // DEVICE DETECTION
 // ═══════════════════════════════════════════════════
 const IS_IOS   = /iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+
+// ── SECURITY CONSTANTS ──
+const MAX_IMG_MB   = 25;    // max upload size in MB
+const ALLOWED_IMG  = ['image/jpeg','image/png','image/webp','image/gif'];
+const MAX_IMG_BYTES= MAX_IMG_MB*1024*1024;
+
+function validateImageFile(file, statusId){
+  if(!ALLOWED_IMG.includes(file.type)){
+    const el=document.getElementById(statusId);
+    if(el)el.textContent='⚠️ Only JPEG, PNG, WebP or GIF allowed. Got: '+(file.type||'unknown');
+    return false;
+  }
+  if(file.size>MAX_IMG_BYTES){
+    const el=document.getElementById(statusId);
+    if(el)el.textContent='⚠️ File too large ('+Math.round(file.size/1024/1024)+'MB). Max is '+MAX_IMG_MB+'MB.';
+    return false;
+  }
+  return true;
+}
 const IN_IFRAME= (()=>{try{return window.self!==window.top;}catch(e){return true;}})();
 const CAN_WEBM = !IS_IOS&&!IN_IFRAME&&typeof MediaRecorder!=='undefined'&&typeof HTMLCanvasElement!=='undefined'&&typeof HTMLCanvasElement.prototype.captureStream!=='undefined';
 
@@ -893,6 +951,16 @@ function showSaveOverlay(dataUrl){
   // Prevent body scroll while overlay is open
   document.body.style.overflow='hidden';
 }
+function closeVideoOverlay(){
+  const ov=document.getElementById('videoOverlay');
+  const vid=document.getElementById('videoOverlayEl');
+  ov.classList.remove('show');
+  vid.pause();
+  // Revoke blob URL to free memory
+  if(ov._blobUrl){URL.revokeObjectURL(ov._blobUrl);ov._blobUrl=null;}
+  vid.src='';
+  document.body.style.overflow='';
+}
 function closeSaveOverlay(){
   document.getElementById('saveOverlay').classList.remove('show');
   document.getElementById('saveOverlayImg').src='';
@@ -1001,12 +1069,21 @@ async function doWebmExport(cv,renderFn,totalFn,modeKey,progId,progLblId,statusI
   rec.onstop=()=>{
     if(!chunks.length){setBusy(false);document.getElementById(statusId).innerHTML='❌ No data captured. Use Frame ZIP instead.';return;}
     const blob=new Blob(chunks,{type:mime});
-    const date=new Date().toLocaleDateString('en-GB').replace(/\//g,'-');
-    dlBlob(blob,'walkingparadox-'+modeKey+'-'+date+'.webm');
+    // Don't use programmatic download — Chrome flags blob binary files as malware
+    // Instead show video in overlay so user right-clicks → Save video as
+    const url=URL.createObjectURL(blob);
+    const vid=document.getElementById('videoOverlayEl');
+    vid.src=url;
+    vid.onloadeddata=()=>{
+      document.getElementById('videoOverlay').classList.add('show');
+      document.body.style.overflow='hidden';
+    };
+    // Store URL to revoke when overlay closes
+    document.getElementById('videoOverlay')._blobUrl=url;
     setBusy(false);document.getElementById(progId).style.width='100%';
-    document.getElementById(progLblId).textContent='✅ Video saved!';
-    document.getElementById(statusId).innerHTML='✅ WebM saved! Import into CapCut or post directly.';
-    setToast('🎬 Video saved!');
+    document.getElementById(progLblId).textContent='✅ Ready — right-click video to save';
+    document.getElementById(statusId).innerHTML='✅ <strong>Video ready!</strong> Right-click the video → Save video as...';
+    setToast('🎬 Right-click the video to save it!');
   };
   rec.start(200);
   let f=0;const tot=totalFn();
@@ -1763,6 +1840,7 @@ function nInit(){
   if(pi2){
     pi2.addEventListener('change',e=>{
       const f2=e.target.files[0];if(!f2)return;
+      if(!validateImageFile(f2,'nStatus'))return;
       const r=new FileReader();
       r.onload=ev=>{
         nS.bgPhoto=ev.target.result;
@@ -1784,6 +1862,8 @@ function nInit(){
   if(fgInp){
     fgInp.addEventListener('change',e=>{
       const f3=e.target.files[0];if(!f3)return;
+      if(!f3.type.startsWith('image/')){document.getElementById('nStatus').textContent='⚠️ Please upload an image file (PNG recommended for cutouts)';return;}
+      if(f3.size>20*1024*1024){document.getElementById('nStatus').textContent='⚠️ File too large (max 20MB). Compress your PNG first.';return;}
       const r=new FileReader();
       r.onload=ev=>{
         nS.fgPhoto=ev.target.result;
