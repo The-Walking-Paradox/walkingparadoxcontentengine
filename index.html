@@ -2801,7 +2801,7 @@ function nInit(){
 // ═══════════════════════════════════════════════════
 const VDIMS={vertical:{W:720,H:1280},square:{W:720,H:720}};
 const vCv=document.getElementById('vCv');const vg=vCv.getContext('2d');
-const vS={fmt:'vertical',bg:'himalaya',listTitle:'Top 10 Cities in Nepal',items:Array.from({length:10},()=>({name:'',stat:'',unit:''})),itemCount:10,exportMethod:'zip',raf:null,frame:0,playing:false,busy:false,srPlaying:false};
+const vS={fmt:'vertical',bg:'himalaya',listTitle:'Top 10 List',items:Array.from({length:5},()=>({name:'',stat:'',unit:''})),itemCount:5,exportMethod:'zip',raf:null,frame:0,playing:false,busy:false,srPlaying:false};
 const VT={INTRO:60,PER:90,OUTRO:90};
 function vTotal(){
   // Use actual number of filled items
@@ -2849,11 +2849,34 @@ function vRender(frame){
 }
 function vBuildItems(){
   const el=document.getElementById('vItemsList');el.innerHTML='';
+  const total=vS.items.length;
   vS.items.forEach((item,i)=>{
+    const rank=total-i; // rank counts down from total to 1
     const card=document.createElement('div');card.className='item-card';
-    card.innerHTML='<div class="item-rank">#'+(10-i)+'</div><div class="item-fields"><input class="fi" placeholder="Name" value="'+esc(item.name)+'" oninput="vS.items['+i+'].name=this.value"/><input class="fi" placeholder="Stat (e.g. 1,442,271)" value="'+esc(item.stat)+'" oninput="vS.items['+i+'].stat=this.value"/><input class="fi" placeholder="Unit (e.g. Population)" value="'+esc(item.unit)+'" oninput="vS.items['+i+'].unit=this.value"/></div>';
+    card.style.position='relative';
+    card.innerHTML='<div class="item-rank">#'+rank+'</div>'
+      +'<div class="item-fields">'
+      +'<input class="fi" placeholder="Name (e.g. Kathmandu)" value="'+esc(item.name)+'" oninput="vS.items['+i+'].name=this.value"/>'
+      +'<input class="fi" placeholder="Stat (e.g. 1442271)" value="'+esc(item.stat)+'" oninput="vS.items['+i+'].stat=this.value"/>'
+      +'<input class="fi" placeholder="Unit (e.g. Population, km²)" value="'+esc(item.unit)+'" oninput="vS.items['+i+'].unit=this.value"/>'
+      +'</div>'
+      +(total>1?'<button class="item-del-btn" onclick="vDeleteItem('+i+')">✕</button>':'');
     el.appendChild(card);
   });
+  // Add button (max 10)
+  if(vS.items.length<10){
+    const addBtn=document.createElement('button');
+    addBtn.className='add-q';
+    addBtn.style.marginTop='4px';
+    addBtn.textContent='+ Add Item';
+    addBtn.onclick=()=>{vS.items.push({name:'',stat:'',unit:''});vBuildItems();vRender(0);};
+    el.appendChild(addBtn);
+  }
+}
+function vDeleteItem(i){
+  if(vS.items.length<=1)return;
+  vS.items.splice(i,1);
+  vBuildItems();vRender(0);
 }
 function vSetFmt(f){vS.fmt=f;document.getElementById('vFmtV').classList.toggle('on',f==='vertical');document.getElementById('vFmtS').classList.toggle('on',f==='square');vFitCv();vRender(0);}
 function vSetBusy(b){vS.busy=b;['vGoD','vGoM'].forEach(id=>{const el=document.getElementById(id);if(el){el.classList.toggle('busy',b);el.textContent=b?'Working...':'⬇ Export';}});}
@@ -2931,13 +2954,18 @@ function qInit(){qFitCv();buildBgRow('qBgRow','himalaya',id=>{qS.bg=id;qRender(0
 // ═══════════════════════════════════════════════════
 let activeTool='news';
 const TOOL_BARS={news:['nBarMob','nBarDesk'],top10:['vBarMob','vBarDesk'],quiz:['qBarMob','qBarDesk'],intro:['iBarMob','iBarDesk']};
+let _iInited=false;
 function switchTool(tool){
   activeTool=tool;
-  // Sections
   ['news','top10','quiz','intro'].forEach(t=>{
     document.getElementById('ts-'+t).classList.toggle('on',t===tool);
     document.getElementById('tn-'+t).classList.toggle('on',t===tool);
   });
+  // Lazy init intro when first opened (canvas needs visible parent for dimensions)
+  if(tool==='intro'&&!_iInited){
+    _iInited=true;
+    setTimeout(()=>{iInit();},50); // small delay so display:flex is applied first
+  }
   // Action bars — hide all, show active
   Object.values(TOOL_BARS).forEach(bars=>bars.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';}));
   checkLayout();
@@ -3279,7 +3307,7 @@ async function init(){
   nInit();
   vInit();
   qInit();
-  iInit();
+  // iInit called lazily when intro tab is first opened
   switchTool('news');
   window.addEventListener('resize',()=>{
     nFitCv();nRender();
