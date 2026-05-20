@@ -45,14 +45,17 @@ html,body{height:100%;background:var(--bg);color:var(--t1);font-family:'DM Sans'
 
 /* ── TOOL NAVIGATION ── */
 .tool-nav{
-  display:grid;grid-template-columns:repeat(3,1fr);
+  display:grid;grid-template-columns:repeat(4,1fr);
   background:var(--panel);border-bottom:2px solid var(--b1);
 }
 .tool-tab{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:3px;padding:11px 6px;cursor:pointer;
+  gap:2px;padding:8px 2px;cursor:pointer;
   border-bottom:3px solid transparent;transition:all .2s;
 }
+.tool-tab .tt-name{font-size:10px;font-weight:700;color:var(--t3);letter-spacing:.3px;text-align:center}
+.tool-tab .tt-sub{font-size:8px;color:var(--t3);letter-spacing:.3px}
+.tool-tab .tt-icon{font-size:16px}
 .tool-tab .tt-icon{font-size:18px}
 .tool-tab .tt-name{font-size:11px;font-weight:700;color:var(--t3);letter-spacing:.3px;text-align:center}
 .tool-tab .tt-sub{font-size:9px;color:var(--t3);letter-spacing:.3px}
@@ -2977,7 +2980,7 @@ function iFitCv(){
   const mxH=window.innerHeight*.44;
   let pw,ph;
   if(W/H>=1){pw=Math.min(mxW,520);ph=pw*(H/W);if(ph>mxH){ph=mxH;pw=ph*(W/H);}}
-  else{ph=Math.min(mxH,420);pw=ph*(W/H);if(pw>mxW){pw=mxW;ph=pw/(W/H);}}
+  else{ph=Math.min(mxH,420);pw=ph*(W/H);if(pw>mxW){pw=mxW;ph=pw*(H/W);}}
   iCv.style.width=pw+'px';iCv.style.height=ph+'px';iCv.width=W;iCv.height=H;
 }
 
