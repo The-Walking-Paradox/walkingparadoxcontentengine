@@ -997,6 +997,25 @@ canvas{border-radius:8px;display:block;max-width:100%;box-shadow:0 16px 60px rgb
       </div>
 
       <div>
+        <div class="sec-lbl">Identity Line</div>
+        <div style="font-size:10px;color:var(--t3);margin-bottom:8px;line-height:1.6">Three words that appear at the end of the intro. Keep hidden until you're ready.</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <button class="chip-btn on" id="iIdNone" onclick="iSetIdentity([],[])">
+            🔒 None — keep it mysterious
+          </button>
+          <button class="chip-btn" id="iIdAmbition" onclick="iSetIdentity(['AMBITION','FREEDOM','HIGHER SELF'],['rgba(201,51,74,.85)','rgba(232,201,106,.85)','rgba(255,255,255,.75)'])">
+            AMBITION · FREEDOM · HIGHER SELF
+          </button>
+          <button class="chip-btn" id="iIdNepal" onclick="iSetIdentity(['NEPAL','PHILOSOPHY','PARADOX'],['rgba(201,51,74,.9)','rgba(232,201,106,.9)','rgba(255,255,255,.8)'])">
+            NEPAL · PHILOSOPHY · PARADOX
+          </button>
+          <button class="chip-btn" id="iIdThree" onclick="iSetIdentity(['SUMAN','RAAHI','THE ONE'],['rgba(201,51,74,.92)','rgba(232,201,106,.92)','rgba(240,236,228,.88)'])">
+            SUMAN · RAAHI · THE ONE
+          </button>
+        </div>
+      </div>
+
+      <div>
         <div class="sec-lbl">Duration</div>
         <div class="t-chips">
           <div class="t-chip on" id="iDur8"  onclick="iSetDur(8)">8s</div>
@@ -2143,10 +2162,10 @@ const nS={
   bgOffX:0, bgOffY:0,
   fgOffX:0, fgOffY:0,
   // Text block positions (normalised 0-1)
-  headX:0.05, headY:0.55,
+  headX:0.08, headY:0.55,  // 8% from left — safe zone for Facebook/Reels
   splitText:false,     // constrain text to left 50% (split layout)
   bilingualCat:true,   // show category in both Nepali and English
-  bodyX:0.05, bodyY:0.77,
+  bodyX:0.08, bodyY:0.72,  // tighter gap to headline, same left safe zone
   // Text styling
   headSize:68,        // px at 1080w — user can slide 28-110
   bodySize:34,        // px at 1080w — user can slide 18-56
@@ -2449,9 +2468,9 @@ function nRender(){
   g.fillStyle='#4a7fc0';g.fillRect(0,H*.5,pp,H*.5);
 
   // Top brand header gradient
-  const tf=g.createLinearGradient(0,0,0,H*.18);
-  tf.addColorStop(0,'rgba(0,0,0,.75)');tf.addColorStop(1,'rgba(0,0,0,0)');
-  g.fillStyle=tf;g.fillRect(0,0,W,H*.18);
+  const tf=g.createLinearGradient(0,0,0,H*.22);
+  tf.addColorStop(0,'rgba(0,0,0,.82)');tf.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle=tf;g.fillRect(0,0,W,H*.22);
 
   // Bottom strip gradient (always readable)
   const bf=g.createLinearGradient(0,H*.78,0,H);
@@ -2471,17 +2490,16 @@ function nRender(){
   g.fillStyle='rgba(232,201,106,.92)';g.textAlign='center';
   // Draw each letter with extra spacing for magazine-cover feel
   const brandTxt='THE WALKING PARADOX';
-  const bY=H*.036+bsz;
+  const bY=H*.065+bsz;  // moved down — Facebook UI covers top ~6%
   if('letterSpacing' in g){g.letterSpacing=Math.round(W*.003)+'px';}
   g.fillText(brandTxt,W/2,bY);
   if('letterSpacing' in g){g.letterSpacing='0px';}
-  // Thin gold rule — slightly wider to match spaced text
   g.strokeStyle='rgba(232,201,106,.22)';g.lineWidth=1;
-  g.beginPath();g.moveTo(W*.28,H*.056);g.lineTo(W*.72,H*.056);g.stroke();
+  g.beginPath();g.moveTo(W*.28,H*.085);g.lineTo(W*.72,H*.085);g.stroke();
 
   // ── CATEGORY BADGE — bilingual support ──
   const isCR=CR_CATS.includes(nS.category);
-  const cbX=nS.headX*W; const cbY=H*.065;
+  const cbX=nS.headX*W; const cbY=H*.092;
 
   if(nS.bilingualCat&&CAT_NP[nS.category]){
     // Two-line badge: Nepali on top, English smaller below
@@ -2524,7 +2542,7 @@ function nRender(){
   // ── GEMINI FIX #1: Left vignette behind text for contrast ──
   // Fades from solid black on text side → transparent on person side
   const hPxRaw=nS.headX*W;
-  const vigW=Math.min(W*.62, hPxRaw+W*(nS.splitText?0.5:0.65));
+  const vigW=Math.min(W*.68, hPxRaw+W*(nS.splitText?0.5:0.68));
   const leftVig=g.createLinearGradient(0,H*.35,vigW,H*.35);
   leftVig.addColorStop(0,'rgba(0,0,0,.72)');
   leftVig.addColorStop(0.55,'rgba(0,0,0,.45)');
@@ -2538,7 +2556,9 @@ function nRender(){
   const hPy=nS.headY*H;
   // If splitText mode: max width = 50% of canvas minus start x
   // Otherwise: 88% of remaining width
-  const hmaxW=nS.splitText ? (W*0.5 - hPx - W*.02) : (W*0.88 - hPx);
+  // Right safe zone: leave 14% margin on right (Facebook reaction buttons cover ~12%)
+  const safeRight=W*0.86;
+  const hmaxW=nS.splitText ? (W*0.5 - hPx - W*.02) : (safeRight - hPx);
 
   const headSz=Math.round(nS.headSize*(W/1080));
   const headFallback=(nS.headFont==='DM Sans')?'sans-serif':'serif';
@@ -2567,7 +2587,7 @@ function nRender(){
   if(nS.subtext&&nS.subtext.trim()){
     const bPx=nS.bodyX*W;
     const bPy=nS.bodyY*H;
-    const bmaxW=nS.splitText ? (W*0.5 - bPx - W*.02) : (W*0.88 - bPx);
+    const bmaxW=nS.splitText ? (W*0.5 - bPx - W*.02) : (safeRight - bPx);
     const bodySz=Math.round(nS.bodySize*(W/1080));
     const bodyFallback=(nS.bodyFont==='Playfair Display')?'serif':'sans-serif';
     g.font='400 '+bodySz+'px "'+nS.bodyFont+'",'+bodyFallback;
@@ -2695,6 +2715,20 @@ function nSetBodyColor(c){
   const key=colorMap[c];
   if(key){const e=document.getElementById('nbc'+key);if(e)e.classList.add('on');}
   nRender();
+}
+function iSetIdentity(words, colors){
+  iS.identityWords = words;
+  iS.identityColors = colors;
+  ['iIdNone','iIdThree','iIdAmbition','iIdNepal'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.classList.remove('on');
+  });
+  const keyMap={'':'iIdNone','SUMAN':'iIdThree','AMBITION':'iIdAmbition','NEPAL':'iIdNepal'};
+  const key=words.length===0?'':(words[0]||'');
+  const btnId=keyMap[key]||'iIdNone';
+  const btn=document.getElementById(btnId);
+  if(btn) btn.classList.add('on');
+  iRender(iS.frame||0);
 }
 function nSetLayout(split){
   nS.splitText=split;
@@ -3060,7 +3094,7 @@ function vInit(){vFitCv();buildBgRow('vBgRow','himalaya',id=>{vS.bg=id;vRender(0
 // TOOL 3: QUIZ VIDEO
 // ═══════════════════════════════════════════════════
 const qCv=document.getElementById('qCv');const qg=qCv.getContext('2d');
-const qS={fmt:'vertical',bg:'himalaya',quizTitle:'Nepal General Knowledge',questions:[mkQuizQ()],exportMethod:'zip',raf:null,frame:0,playing:false,busy:false};
+const qS={fmt:'vertical',bg:'himalaya',quizTitle:'Nepal General Knowledge',questions:Array.from({length:5},()=>mkQuizQ()),exportMethod:'zip',raf:null,frame:0,playing:false,busy:false};
 function mkQuizQ(){return{q:'',opts:['','','',''],correct:0,timer:5};}
 function qDur(q){return 30+45+q.timer*FPS+75+20;}
 function qTotal(){return qS.questions.reduce((a,q)=>a+qDur(q),0)+60;}
@@ -3307,6 +3341,8 @@ const iS={
   fmt:'vertical', style:'dark', dur:8,
   tagline:'राही — The One Who Wanders',
   subtitle:'Nepal Dispatches',
+  identityWords:[],    // empty = hidden. Populated by preset buttons
+  identityColors:[],
   exportMethod:'zip',
   raf:null, frame:0, playing:false, busy:false,
 };
@@ -3686,58 +3722,36 @@ function iRender(frame){
     // Each word fades in one at a time
     // The three identities — stagger in one by one
     // SUMAN=duty/crimson, RAAHI=wandering/gold, THE ONE=integrated/white
-    const threeWords=['SUMAN','RAAHI','THE ONE'];
-    const threeColors=['rgba(201,51,74,.92)','rgba(232,201,106,.92)','rgba(240,236,228,.88)'];
-    const threeSizes=[W*.028,W*.028,W*.028];
-    const sep='  ·  ';
-
-    // Measure total for centering
-    g.font='600 '+Math.round(W*.028)+'px "DM Sans",sans-serif';
-    if('letterSpacing' in g)g.letterSpacing='3px';
-    let tTotal2=0;
-    threeWords.forEach((tw2,ti)=>{tTotal2+=g.measureText(tw2).width;if(ti<2)tTotal2+=g.measureText(sep).width;});
-    let tx=W/2-tTotal2/2;
-
-    threeWords.forEach((tw2,ti)=>{
-      const wP2=ease(clamp((nepalP-(ti*.3))/.35,0,1));
-      g.save();
-      g.globalAlpha=wP2*.78;
-      g.fillStyle=threeColors[ti];
-      g.textAlign='left';
-      g.font='600 '+Math.round(threeSizes[ti])+'px "DM Sans",sans-serif';
+    // Identity line — driven by iS.identityWords (empty = hidden)
+    const threeWords=iS.identityWords||[];
+    const threeColors=iS.identityColors||[];
+    if(threeWords.length>0){
+      const sep='  ·  ';
+      g.font='600 '+Math.round(W*.028)+'px "DM Sans",sans-serif';
       if('letterSpacing' in g)g.letterSpacing='3px';
-      // Subtle glow on each word as it appears
-      if(wP2<0.7){g.shadowColor=threeColors[ti];g.shadowBlur=W*.015;}
-      g.fillText(tw2,tx,H*.65);
-      g.shadowBlur=0;
-      const ww=g.measureText(tw2).width;tx+=ww;
-      if(ti<2){
-        g.save();g.globalAlpha=wP2*.35;
-        g.fillStyle='rgba(160,155,145,1)';
-        g.fillText(sep,tx,H*.65);
-        tx+=g.measureText(sep).width;
+      let tTotal2=0;
+      threeWords.forEach((tw2,ti)=>{tTotal2+=g.measureText(tw2).width;if(ti<threeWords.length-1)tTotal2+=g.measureText(sep).width;});
+      let tx=W/2-tTotal2/2;
+      threeWords.forEach((tw2,ti)=>{
+        const wP2=ease(clamp((nepalP-(ti*.3))/.35,0,1));
+        g.save();g.globalAlpha=wP2*.78;
+        g.fillStyle=threeColors[ti]||'rgba(200,195,185,.85)';
+        g.textAlign='left';
+        g.font='600 '+Math.round(W*.028)+'px "DM Sans",sans-serif';
+        if('letterSpacing' in g)g.letterSpacing='3px';
+        if(wP2<0.7){g.shadowColor=threeColors[ti]||'#fff';g.shadowBlur=W*.015;}
+        g.fillText(tw2,tx,H*.65);
+        g.shadowBlur=0;
+        const ww=g.measureText(tw2).width;tx+=ww;
+        if(ti<threeWords.length-1){
+          g.save();g.globalAlpha=wP2*.35;g.fillStyle='rgba(160,155,145,1)';
+          g.fillText(sep,tx,H*.65);tx+=g.measureText(sep).width;g.restore();
+        }
+        if('letterSpacing' in g)g.letterSpacing='0px';
         g.restore();
-      }
-      if('letterSpacing' in g)g.letterSpacing='0px';
-      g.restore();
-    });
-
-    // Small descriptor line beneath — only at full reveal
-    if(nepalP>0.9){
-      const descP=ease(clamp((nepalP-.9)/.1,0,1));
-      g.save();g.globalAlpha=descP*.45;
-      g.font='400 '+Math.round(W*.016)+'px "DM Sans",sans-serif';
-      g.fillStyle='rgba(160,155,145,.8)';g.textAlign='center';
-      if('letterSpacing' in g)g.letterSpacing='2px';
-      g.fillText('DUTY  ·  WANDERING  ·  INTEGRATION',W/2,H*.678);
-      if('letterSpacing' in g)g.letterSpacing='0px';
-      g.restore();
+      });
     }
-    if('letterSpacing' in g)g.letterSpacing='0px';
-    g.restore();
-  }
-
-  // ── PHASE 6: Hold — more particles, breathing (85-100%) ──
+      // ── PHASE 6: Hold — more particles, breathing (85-100%) ──
   const holdP=clamp((T-dur*.85)/(dur*.15),0,1);
   if(holdP>0){
     drawParticles(g,W,H,pts,T+10,holdP*.5);
@@ -3747,6 +3761,8 @@ function iRender(frame){
   const vig=g.createRadialGradient(W/2,H*.5,H*.08,W/2,H*.5,H*.72);
   vig.addColorStop(0,'rgba(0,0,0,0)');vig.addColorStop(1,'rgba(0,0,0,.42)');
   g.fillStyle=vig;g.fillRect(0,0,W,H);
+}
+
 }
 
 // ── CONTROLS ──
